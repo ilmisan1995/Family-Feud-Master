@@ -1,220 +1,170 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Family Feud Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Fortunes Web</title>
 <style>
 body {
-  font-family: Arial;
-  background: #f5a623;
-  text-align: center;
-}
-
-h1 { color: white; }
-
-.board {
-  width: 700px;
-  margin: auto;
-  background: #bcd;
-  padding: 20px;
-  border-radius: 20px;
-}
-
-.answer {
-  background: black;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0b0f2a;
   color: white;
-  margin: 5px;
-  padding: 10px;
+}
+.container {
+  display: flex;
+  height: 100vh;
+}
+.left, .right {
+  padding: 15px;
+  box-sizing: border-box;
+}
+.left {
+  width: 40%;
+  background: #11163a;
+  border-right: 3px solid #222;
+}
+.right {
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+h2 {
+  margin-top: 0;
+}
+input, button {
+  padding: 8px;
+  margin: 5px 0;
+  width: 100%;
+  border: none;
+  border-radius: 5px;
+}
+button {
+  background: #1e90ff;
+  color: white;
   cursor: pointer;
+}
+button:hover {
+  background: #0c6ed6;
+}
+.answer-list {
+  margin-top: 10px;
+}
+.answer-item {
   display: flex;
   justify-content: space-between;
-  font-size: 18px;
-  transition: 0.5s;
+  background: #1a1f4d;
+  padding: 8px;
+  margin-bottom: 5px;
+  border-radius: 5px;
 }
-
-.answer.revealed {
-  background: orange;
+.board {
+  background: linear-gradient(#1e2a78, #0a0f3d);
+  border-radius: 15px;
+  padding: 20px;
 }
-
-.hidden {
-  visibility: hidden;
-}
-
-.scoreboard {
+.row {
   display: flex;
-  justify-content: space-around;
-  margin: 10px;
-  font-size: 20px;
-}
-
-.strikes {
-  color: red;
-  font-size: 24px;
-}
-
-button {
+  justify-content: space-between;
+  background: #2433a6;
+  margin: 8px 0;
   padding: 10px;
-  margin: 5px;
-  cursor: pointer;
+  border-radius: 20px;
+}
+.hidden {
+  background: #0a0f3d;
+}
+.score {
+  font-weight: bold;
+}
+.total {
+  text-align: center;
+  font-size: 24px;
+  margin-top: 10px;
 }
 </style>
 </head>
-
 <body>
+<div class="container">
+  <div class="left">
+    <h2>Control Board</h2>
+    <input id="question" placeholder="Masukkan pertanyaan">
+    <input id="answer" placeholder="Jawaban">
+    <input id="score" type="number" placeholder="Skor">
+    <button onclick="addAnswer()">Tambah Jawaban</button>
+    <div class="answer-list" id="answerList"></div>
+    <button onclick="startGame()">Start Game</button>
+  </div>  <div class="right">
+    <div class="board">
+      <h2 id="gameQuestion">Pertanyaan</h2>
+      <div id="board"></div>
+      <div class="total">TOTAL: <span id="total">0</span></div>
+    </div>
+  </div>
+</div><script>
+let answers = [];
+let revealed = [];
 
-<h1>🎤 Family Feud</h1>
+function addAnswer() {
+  const ans = document.getElementById('answer').value;
+  const score = parseInt(document.getElementById('score').value);
+  if (!ans || !score) return;
 
-<div class="scoreboard">
-  <div>Tim A: <span id="scoreA">0</span></div>
-  <div>Tim B: <span id="scoreB">0</span></div>
-</div>
+  answers.push({ text: ans, score });
+  revealed.push(false);
+  renderList();
 
-<h2 id="question">Pertanyaan...</h2>
+  document.getElementById('answer').value = '';
+  document.getElementById('score').value = '';
+}
 
-<div class="board" id="board"></div>
+function renderList() {
+  const list = document.getElementById('answerList');
+  list.innerHTML = '';
+  answers.forEach((a, i) => {
+    const div = document.createElement('div');
+    div.className = 'answer-item';
+    div.innerHTML = `${a.text} (${a.score}) <button onclick="reveal(${i})">Tampil</button>`;
+    list.appendChild(div);
+  });
+}
 
-<div class="strikes">
-  ❌ <span id="strikeA">0</span> | ❌ <span id="strikeB">0</span>
-</div>
-
-<br>
-
-<button onclick="wrong()">Strike</button>
-<button onclick="steal()">Steal</button>
-<button onclick="nextRound()">Next Round</button>
-
-<script>
-
-const rounds = [
-  1,1,2,3,3,"random"
-];
-
-let round = 0;
-let multiplier = 1;
-
-let scoreA = 0;
-let scoreB = 0;
-
-let strikesA = 0;
-let strikesB = 0;
-
-let turn = "A";
-
-const questions = [
-  {
-    q: "Sebutkan sesuatu yang ada di dapur",
-    a: [
-      ["Kompor",30],
-      ["Panci",20],
-      ["Pisau",15],
-      ["Kulkas",25],
-      ["Sendok",10]
-    ]
-  },
-  {
-    q: "Sebutkan sesuatu yang dibawa saat hujan",
-    a: [
-      ["Payung",40],
-      ["Jas Hujan",30],
-      ["Tas",10],
-      ["Sepatu",20]
-    ]
-  }
-];
-
-let currentAnswers = [];
-
-function randomQuestion() {
-  let q = questions[Math.floor(Math.random()*questions.length)];
-  
-  let count = Math.floor(Math.random()*12)+1;
-  currentAnswers = q.a.slice(0,count);
-
-  document.getElementById("question").innerText = q.q;
-
+function startGame() {
+  document.getElementById('gameQuestion').innerText = document.getElementById('question').value;
   renderBoard();
 }
 
 function renderBoard() {
-  let board = document.getElementById("board");
-  board.innerHTML = "";
+  const board = document.getElementById('board');
+  board.innerHTML = '';
 
-  currentAnswers.forEach((ans,i)=>{
-    let div = document.createElement("div");
-    div.className = "answer";
-    div.innerHTML = `<span>${i+1}. ???</span><span></span>`;
-    
-    div.onclick = ()=>{
-      if(!div.classList.contains("revealed")){
-        div.classList.add("revealed");
-        div.innerHTML = `<span>${ans[0]}</span><span>${ans[1]}</span>`;
-        addScore(ans[1]);
-      }
-    };
+  answers.forEach((a, i) => {
+    const row = document.createElement('div');
+    row.className = 'row ' + (revealed[i] ? '' : 'hidden');
+    row.onclick = () => reveal(i);
 
-    board.appendChild(div);
+    row.innerHTML = `
+      <span>${i + 1}. ${revealed[i] ? a.text : '????'}</span>
+      <span class="score">${revealed[i] ? a.score : ''}</span>
+    `;
+
+    board.appendChild(row);
   });
+
+  updateTotal();
 }
 
-function addScore(points){
-  let total = points * multiplier;
-
-  if(turn === "A"){
-    scoreA += total;
-  } else {
-    scoreB += total;
-  }
-
-  updateScore();
+function reveal(index) {
+  revealed[index] = true;
+  renderBoard();
 }
 
-function updateScore(){
-  document.getElementById("scoreA").innerText = scoreA;
-  document.getElementById("scoreB").innerText = scoreB;
+function updateTotal() {
+  let total = 0;
+  answers.forEach((a, i) => {
+    if (revealed[i]) total += a.score;
+  });
+  document.getElementById('total').innerText = total;
 }
-
-function wrong(){
-  if(turn === "A"){
-    strikesA++;
-    document.getElementById("strikeA").innerText = strikesA;
-    if(strikesA >= 3){
-      turn = "B";
-    }
-  } else {
-    strikesB++;
-    document.getElementById("strikeB").innerText = strikesB;
-    if(strikesB >= 3){
-      turn = "A";
-    }
-  }
-}
-
-function steal(){
-  turn = (turn === "A") ? "B" : "A";
-  alert("Kesempatan STEAL!");
-}
-
-function nextRound(){
-  round++;
-  
-  if(rounds[round] === "random"){
-    multiplier = Math.floor(Math.random()*3)+1;
-  } else {
-    multiplier = rounds[round] || 1;
-  }
-
-  strikesA = 0;
-  strikesB = 0;
-
-  document.getElementById("strikeA").innerText = 0;
-  document.getElementById("strikeB").innerText = 0;
-
-  randomQuestion();
-}
-
-randomQuestion();
-
-</script>
-
-</body>
+</script></body>
 </html>
