@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Family Feud Game</title>
+<style>
+body {
+  font-family: Arial;
+  background: #f5a623;
+  text-align: center;
+}
+
+h1 { color: white; }
+
+.board {
+  width: 700px;
+  margin: auto;
+  background: #bcd;
+  padding: 20px;
+  border-radius: 20px;
+}
+
+.answer {
+  background: black;
+  color: white;
+  margin: 5px;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  transition: 0.5s;
+}
+
+.answer.revealed {
+  background: orange;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.scoreboard {
+  display: flex;
+  justify-content: space-around;
+  margin: 10px;
+  font-size: 20px;
+}
+
+.strikes {
+  color: red;
+  font-size: 24px;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎤 Family Feud</h1>
+
+<div class="scoreboard">
+  <div>Tim A: <span id="scoreA">0</span></div>
+  <div>Tim B: <span id="scoreB">0</span></div>
+</div>
+
+<h2 id="question">Pertanyaan...</h2>
+
+<div class="board" id="board"></div>
+
+<div class="strikes">
+  ❌ <span id="strikeA">0</span> | ❌ <span id="strikeB">0</span>
+</div>
+
+<br>
+
+<button onclick="wrong()">Strike</button>
+<button onclick="steal()">Steal</button>
+<button onclick="nextRound()">Next Round</button>
+
+<script>
+
+const rounds = [
+  1,1,2,3,3,"random"
+];
+
+let round = 0;
+let multiplier = 1;
+
+let scoreA = 0;
+let scoreB = 0;
+
+let strikesA = 0;
+let strikesB = 0;
+
+let turn = "A";
+
+const questions = [
+  {
+    q: "Sebutkan sesuatu yang ada di dapur",
+    a: [
+      ["Kompor",30],
+      ["Panci",20],
+      ["Pisau",15],
+      ["Kulkas",25],
+      ["Sendok",10]
+    ]
+  },
+  {
+    q: "Sebutkan sesuatu yang dibawa saat hujan",
+    a: [
+      ["Payung",40],
+      ["Jas Hujan",30],
+      ["Tas",10],
+      ["Sepatu",20]
+    ]
+  }
+];
+
+let currentAnswers = [];
+
+function randomQuestion() {
+  let q = questions[Math.floor(Math.random()*questions.length)];
+  
+  let count = Math.floor(Math.random()*12)+1;
+  currentAnswers = q.a.slice(0,count);
+
+  document.getElementById("question").innerText = q.q;
+
+  renderBoard();
+}
+
+function renderBoard() {
+  let board = document.getElementById("board");
+  board.innerHTML = "";
+
+  currentAnswers.forEach((ans,i)=>{
+    let div = document.createElement("div");
+    div.className = "answer";
+    div.innerHTML = `<span>${i+1}. ???</span><span></span>`;
+    
+    div.onclick = ()=>{
+      if(!div.classList.contains("revealed")){
+        div.classList.add("revealed");
+        div.innerHTML = `<span>${ans[0]}</span><span>${ans[1]}</span>`;
+        addScore(ans[1]);
+      }
+    };
+
+    board.appendChild(div);
+  });
+}
+
+function addScore(points){
+  let total = points * multiplier;
+
+  if(turn === "A"){
+    scoreA += total;
+  } else {
+    scoreB += total;
+  }
+
+  updateScore();
+}
+
+function updateScore(){
+  document.getElementById("scoreA").innerText = scoreA;
+  document.getElementById("scoreB").innerText = scoreB;
+}
+
+function wrong(){
+  if(turn === "A"){
+    strikesA++;
+    document.getElementById("strikeA").innerText = strikesA;
+    if(strikesA >= 3){
+      turn = "B";
+    }
+  } else {
+    strikesB++;
+    document.getElementById("strikeB").innerText = strikesB;
+    if(strikesB >= 3){
+      turn = "A";
+    }
+  }
+}
+
+function steal(){
+  turn = (turn === "A") ? "B" : "A";
+  alert("Kesempatan STEAL!");
+}
+
+function nextRound(){
+  round++;
+  
+  if(rounds[round] === "random"){
+    multiplier = Math.floor(Math.random()*3)+1;
+  } else {
+    multiplier = rounds[round] || 1;
+  }
+
+  strikesA = 0;
+  strikesB = 0;
+
+  document.getElementById("strikeA").innerText = 0;
+  document.getElementById("strikeB").innerText = 0;
+
+  randomQuestion();
+}
+
+randomQuestion();
+
+</script>
+
+</body>
+</html>
